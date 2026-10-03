@@ -50,7 +50,9 @@ class DoclingProvider:
     ) -> ExtractionResult:
         native_order = (parameters or {}).get("native_reading_order", False)
         if not isinstance(native_order, bool):
-            raise ProviderExecutionError("native_reading_order must be a boolean", provider="docling")
+            raise ProviderExecutionError(
+                "native_reading_order must be a boolean", provider="docling"
+            )
         started_at = datetime.now(UTC)
         started_clock = perf_counter()
 

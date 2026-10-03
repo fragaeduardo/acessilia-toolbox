@@ -39,6 +39,20 @@ document.layout.analyze
 table.extract
 ```
 
+The local adapter accepts the experimental boolean parameter
+`native_reading_order` (default: `false`). When enabled, normalization visits
+references from `body`, then `furniture`, retaining unreferenced collection items
+afterward. Cycles, repeated references and unresolved references do not duplicate
+or discard existing items. Each element's `metadata.reading_order_context`
+identifies whether its position came from a native tree or collection fallback.
+This option stays local and is not sent to docling-serve. Adapter identity and
+the request parameter participate in cache identity.
+
+Keep the default for production. The paired 66-page development experiment found
+unchanged reading-order and fusion scores, but a small mean text loss for Docling
+alone. Native traversal preserves provider structure; it does not establish a
+quality improvement in Markdown conversion.
+
 ## MinerU
 
 MinerU can provide overlapping document-understanding capabilities.

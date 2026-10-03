@@ -46,14 +46,20 @@ class DoclingServeDocument:
             while stack:
                 child, level = stack.pop()
                 target = child.get("$ref") if isinstance(child, dict) else None
-                ref = target if isinstance(target, str) and target in entries else None
-                if ref is None or ref in seen:
+                native_ref = target if isinstance(target, str) and target in entries else None
+                if native_ref is None or native_ref in seen:
                     continue
-                seen.add(ref)
-                item = entries[ref]
-                self._items.append((_ItemProxy(
-                    {**item, "self_ref": item.get("self_ref") or ref}, root_name,
-                ), level))
+                seen.add(native_ref)
+                item = entries[native_ref]
+                self._items.append(
+                    (
+                        _ItemProxy(
+                            {**item, "self_ref": item.get("self_ref") or native_ref},
+                            root_name,
+                        ),
+                        level,
+                    )
+                )
                 stack.extend((child, level + 1) for child in reversed(item.get("children") or []))
 
         # Preserve orphan/legacy content, without claiming collection order is native.
@@ -63,9 +69,15 @@ class DoclingServeDocument:
             level = item.get("level", 1)
             if not isinstance(level, int) or level < 0:
                 level = 1
-            self._items.append((_ItemProxy(
-                {**item, "self_ref": item.get("self_ref") or ref}, "collection",
-            ), level))
+            self._items.append(
+                (
+                    _ItemProxy(
+                        {**item, "self_ref": item.get("self_ref") or ref},
+                        "collection",
+                    ),
+                    level,
+                )
+            )
 
     def iterate_items(self, **_: Any) -> Any:
         return iter(self._items)
@@ -83,8 +95,7 @@ class DoclingServeDocument:
             return {int(key): _PageProxy(value) for key, value in pages.items()}
         if isinstance(pages, list):
             return {
-                page.get("page_number", index): _PageProxy(page)
-                for index, page in enumerate(pages)
+                page.get("page_number", index): _PageProxy(page) for index, page in enumerate(pages)
             }
         return {}
 
@@ -95,7 +106,8 @@ class _ItemProxy:
     def __init__(self, data: dict[str, Any], order_source: str = "collection") -> None:
         self._data = data
         self.reading_order_context = {
-            "provider": "docling", "source": order_source,
+            "provider": "docling",
+            "source": order_source,
             "native_order": order_source != "collection",
         }
 

@@ -199,10 +199,16 @@ def test_adapter_identity_is_reported_before_cache_lookup_and_in_extraction() ->
     assert versions["docling-adapter"]
 
 
-@pytest.mark.parametrize("native_order,expected", [
-    (False, ["Before", "After"]), (True, ["After", "Before"]),
-])
-def test_native_reading_order_uses_the_same_adapter_in_real_provider_execution(native_order, expected):
+@pytest.mark.parametrize(
+    "native_order,expected",
+    [
+        (False, ["Before", "After"]),
+        (True, ["After", "Before"]),
+    ],
+)
+def test_native_reading_order_uses_the_same_adapter_in_real_provider_execution(
+    native_order, expected
+):
     from tests.unit.test_docling_document import payload
 
     raw = payload()
@@ -216,8 +222,11 @@ def test_native_reading_order_uses_the_same_adapter_in_real_provider_execution(n
         return httpx.Response(200, json={"document": {"json_content": raw}})
 
     result = provider_with(handler).execute(
-        "document.structure.extract", b"%PDF-test", filename="sample.pdf",
-        media_type="application/pdf", parameters={"native_reading_order": native_order},
+        "document.structure.extract",
+        b"%PDF-test",
+        filename="sample.pdf",
+        media_type="application/pdf",
+        parameters={"native_reading_order": native_order},
     )
     assert [item.text for item, _ in result.document.iterate_items()] == expected
     assert result.configuration["native_reading_order"] is native_order
@@ -230,6 +239,9 @@ def test_native_order_configuration_rejects_non_boolean_values_before_transport(
 
     with pytest.raises(ProviderExecutionError, match="must be a boolean"):
         provider_with(handler).execute(
-            "document.structure.extract", b"%PDF-test", filename="sample.pdf",
-            media_type="application/pdf", parameters={"native_reading_order": invalid},
+            "document.structure.extract",
+            b"%PDF-test",
+            filename="sample.pdf",
+            media_type="application/pdf",
+            parameters={"native_reading_order": invalid},
         )
