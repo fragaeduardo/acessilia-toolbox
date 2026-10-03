@@ -41,7 +41,7 @@ PARSE_PATH = "/file_parse"
 
 VERSION_KEYS = ("version", "mineru_version")
 COMPONENT_KEYS = ("version", "backend")
-ADAPTER_VERSION = "native-index-1"
+ADAPTER_VERSION = "native-index-2-opt-in"
 
 
 class MineruProvider:
@@ -61,6 +61,11 @@ class MineruProvider:
         media_type: str,
         parameters: Mapping[str, Any] | None = None,
     ) -> ExtractionResult:
+        native_order = (parameters or {}).get("native_reading_order", False)
+        if not isinstance(native_order, bool):
+            raise ProviderExecutionError(
+                "native_reading_order must be a boolean", provider="mineru"
+            )
         started_at = datetime.now(UTC)
         started_clock = perf_counter()
 
@@ -72,7 +77,7 @@ class MineruProvider:
 
         completed_at = datetime.now(UTC)
         return ExtractionResult(
-            document=MineruDocument(document),
+            document=MineruDocument(document, native_order=native_order),
             backend="mineru",
             started_at=started_at,
             completed_at=completed_at,
@@ -87,6 +92,7 @@ class MineruProvider:
                      **({"mineru": server_version} if server_version else {})}
                 ),
                 **dict(parameters or {}),
+                "native_reading_order": native_order,
             },
         )
 
