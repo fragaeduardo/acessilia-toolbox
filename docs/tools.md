@@ -60,6 +60,15 @@ Overlap is useful for experimentation, fallback, and explicit agent
 policy, but providers are interchangeable only when they satisfy the
 same capability contract.
 
+The adapter preserves each nonnegative integer `preproc_blocks.index` in element
+`metadata.reading_order_context`, together with its provider and zero-based
+`page_idx`. Missing or invalid indices (including booleans) become
+`native_index: null`, with `source: collection`; no index is inferred from the
+array position. Normalization retains its existing traversal order. Consuming
+the index to reorder blocks is a separate experiment. The adapter version is
+included in cache identity so previously cached manifests cannot hide the new
+metadata.
+
 ## OCR
 
 OCR should be independently addressable rather than hidden only inside
