@@ -189,3 +189,11 @@ def test_factory_rejects_providers_without_an_adapter() -> None:
 
     with pytest.raises(ProviderNotFoundError):
         create_adapter(descriptor(id="no-such-provider", capabilities=["document.ocr"]))
+
+
+def test_adapter_identity_is_reported_before_cache_lookup_and_in_extraction() -> None:
+    adapter = provider_with(convert_handler)
+    versions = adapter.versions()
+    configuration = extract(adapter).configuration
+    assert versions["docling-adapter"] == configuration["component_versions"]["docling-adapter"]
+    assert versions["docling-adapter"]

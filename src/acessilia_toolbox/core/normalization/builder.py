@@ -674,6 +674,9 @@ def _confidence(item: Any) -> float | None:
 
 def _safe_metadata(item: Any, *, element_type: str | None = None) -> dict[str, Any]:
     metadata: dict[str, Any] = {"docling_class": item.__class__.__name__}
+    order_context = getattr(item, "reading_order_context", None)
+    if isinstance(order_context, dict):
+        metadata["reading_order_context"] = dict(order_context)
     content_layer = getattr(item, "content_layer", None)
     if content_layer is not None:
         metadata["content_layer"] = str(getattr(content_layer, "value", content_layer))

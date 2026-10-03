@@ -30,18 +30,41 @@ class DoclingServeDocument:
         self._build_items()
 
     def _build_items(self) -> None:
+        entries: dict[str, dict[str, Any]] = {}
+        for collection in ITEM_COLLECTIONS:
+            for index, item in enumerate(self._payload.get(collection) or []):
+                ref = f"#/{collection}/{index}"
+                entries[ref] = item
+
         seen: set[str] = set()
-        for collection, default_level in ITEM_COLLECTIONS.items():
-            for item in self._payload.get(collection, []):
-                ref = item.get("self_ref", "")
-                if ref and ref in seen:
+        for root_name in ("body", "furniture"):
+            root = self._payload.get(root_name)
+            if not isinstance(root, dict):
+                continue
+            stack = [(child, 1) for child in reversed(root.get("children") or [])]
+            while stack:
+                child, level = stack.pop()
+                target = child.get("$ref") if isinstance(child, dict) else None
+                ref = target if isinstance(target, str) and target in entries else None
+                if ref is None or ref in seen:
                     continue
-                if ref:
-                    seen.add(ref)
-                level = item.get("level", default_level)
-                if isinstance(level, dict):
-                    level = 1
-                self._items.append((_ItemProxy(item), level))
+                seen.add(ref)
+                item = entries[ref]
+                self._items.append((_ItemProxy(
+                    {**item, "self_ref": item.get("self_ref") or ref}, root_name,
+                ), level))
+                stack.extend((child, level + 1) for child in reversed(item.get("children") or []))
+
+        # Preserve orphan/legacy content, without claiming collection order is native.
+        for ref, item in entries.items():
+            if ref in seen:
+                continue
+            level = item.get("level", 1)
+            if not isinstance(level, int) or level < 0:
+                level = 1
+            self._items.append((_ItemProxy(
+                {**item, "self_ref": item.get("self_ref") or ref}, "collection",
+            ), level))
 
     def iterate_items(self, **_: Any) -> Any:
         return iter(self._items)
@@ -68,8 +91,12 @@ class DoclingServeDocument:
 class _ItemProxy:
     """Attribute access over a single docling item."""
 
-    def __init__(self, data: dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any], order_source: str = "collection") -> None:
         self._data = data
+        self.reading_order_context = {
+            "provider": "docling", "source": order_source,
+            "native_order": order_source != "collection",
+        }
 
     def __getattr__(self, name: str) -> Any:
         if name == "label":

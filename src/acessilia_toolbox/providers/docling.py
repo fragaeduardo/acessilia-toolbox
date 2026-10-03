@@ -29,6 +29,7 @@ VERSION_KEYS = ("docling-serve", "docling_serve_version", "version")
 # Components whose upgrade changes extraction output, so they belong in the
 # cache key: a new Docling build must not reuse an older result.
 COMPONENT_KEYS = ("docling-serve", "docling", "docling-core", "docling-ibm-models", "docling-parse")
+ADAPTER_VERSION = "tree-order-2"
 
 
 class DoclingProvider:
@@ -68,7 +69,7 @@ class DoclingProvider:
                 "extractor": "docling-serve",
                 "base_url": self.base_url,
                 "capability": capability_id,
-                "component_versions": _components(versions),
+                "component_versions": {**_components(versions), "docling-adapter": ADAPTER_VERSION},
                 **dict(parameters or {}),
             },
         )
@@ -79,6 +80,7 @@ class DoclingProvider:
         return {
             "provider": _pick_version(reported, self.descriptor.version),
             **_components(reported),
+            "docling-adapter": ADAPTER_VERSION,
         }
 
     def health(self) -> ProviderHealth:
