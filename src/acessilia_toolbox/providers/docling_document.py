@@ -24,60 +24,24 @@ ITEM_COLLECTIONS = {
 class DoclingServeDocument:
     """Document facade over a docling-serve JSON payload."""
 
-    def __init__(self, payload: dict[str, Any], *, native_order: bool = False) -> None:
+    def __init__(self, payload: dict[str, Any]) -> None:
         self._payload = payload
-        self._native_order = native_order
         self._items: list[tuple[Any, int]] = []
         self._build_items()
 
     def _build_items(self) -> None:
-        entries: dict[str, dict[str, Any]] = {}
-        for collection in ITEM_COLLECTIONS:
-            for index, item in enumerate(self._payload.get(collection) or []):
-                ref = f"#/{collection}/{index}"
-                entries[ref] = item
-
         seen: set[str] = set()
-        for root_name in ("body", "furniture") if self._native_order else ():
-            root = self._payload.get(root_name)
-            if not isinstance(root, dict):
-                continue
-            stack = [(child, 1) for child in reversed(root.get("children") or [])]
-            while stack:
-                child, level = stack.pop()
-                target = child.get("$ref") if isinstance(child, dict) else None
-                native_ref = target if isinstance(target, str) and target in entries else None
-                if native_ref is None or native_ref in seen:
+        for collection, default_level in ITEM_COLLECTIONS.items():
+            for item in self._payload.get(collection, []):
+                ref = item.get("self_ref", "")
+                if ref and ref in seen:
                     continue
-                seen.add(native_ref)
-                item = entries[native_ref]
-                self._items.append(
-                    (
-                        _ItemProxy(
-                            {**item, "self_ref": item.get("self_ref") or native_ref},
-                            root_name,
-                        ),
-                        level,
-                    )
-                )
-                stack.extend((child, level + 1) for child in reversed(item.get("children") or []))
-
-        # Preserve orphan/legacy content, without claiming collection order is native.
-        for ref, item in entries.items():
-            if ref in seen:
-                continue
-            level = item.get("level", 1)
-            if not isinstance(level, int) or level < 0:
-                level = 1
-            self._items.append(
-                (
-                    _ItemProxy(
-                        {**item, "self_ref": item.get("self_ref") or ref},
-                        "collection",
-                    ),
-                    level,
-                )
-            )
+                if ref:
+                    seen.add(ref)
+                level = item.get("level", default_level)
+                if isinstance(level, dict):
+                    level = 1
+                self._items.append((_ItemProxy(item), level))
 
     def iterate_items(self, **_: Any) -> Any:
         return iter(self._items)
@@ -95,7 +59,8 @@ class DoclingServeDocument:
             return {int(key): _PageProxy(value) for key, value in pages.items()}
         if isinstance(pages, list):
             return {
-                page.get("page_number", index): _PageProxy(page) for index, page in enumerate(pages)
+                page.get("page_number", index): _PageProxy(page)
+                for index, page in enumerate(pages)
             }
         return {}
 
@@ -103,13 +68,8 @@ class DoclingServeDocument:
 class _ItemProxy:
     """Attribute access over a single docling item."""
 
-    def __init__(self, data: dict[str, Any], order_source: str = "collection") -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self._data = data
-        self.reading_order_context = {
-            "provider": "docling",
-            "source": order_source,
-            "native_order": order_source != "collection",
-        }
 
     def __getattr__(self, name: str) -> Any:
         if name == "label":
@@ -149,8 +109,11 @@ class _ProvProxy:
         self.page_no = page if page is not None else data.get("page_number", 1)
         bbox = data.get("bbox")
         self.bbox = _BboxProxy(bbox) if bbox else None
-        # Keep malformed offsets as evidence; normalization validates them.
-        self.charspan = data.get("charspan")
+        charspan = data.get("charspan")
+        if isinstance(charspan, list | tuple) and len(charspan) == 2:
+            self.charspan: tuple[int, int] | None = (int(charspan[0]), int(charspan[1]))
+        else:
+            self.charspan = None
 
 
 class _BboxProxy:

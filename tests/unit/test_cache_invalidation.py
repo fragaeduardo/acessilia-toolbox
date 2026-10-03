@@ -93,17 +93,3 @@ def test_component_versions_are_recorded_in_provenance() -> None:
     )
 
     assert result.provenance.model_versions == BASELINE
-
-
-def test_upgrading_only_the_document_adapter_invalidates_previous_cache_entries() -> None:
-    from acessilia_toolbox.providers.docling import ADAPTER_VERSION
-
-    new = {**BASELINE, "docling-adapter": ADAPTER_VERSION}
-    assert cache_key_for(new) != cache_key_for(dict(BASELINE))
-    assert cache_key_for(new) != cache_key_for({**BASELINE, "docling-adapter": "tree-order-1"})
-
-def test_mineru_adapter_identity_invalidates_entries_without_native_order_evidence() -> None:
-    from acessilia_toolbox.providers.mineru import ADAPTER_VERSION
-
-    new = {**BASELINE, "mineru-adapter": ADAPTER_VERSION}
-    assert cache_key_for(new) != cache_key_for(dict(BASELINE))

@@ -10,7 +10,6 @@ import hashlib
 import mimetypes
 import re
 from collections import Counter
-from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -623,9 +622,8 @@ def _provenance(item: Any) -> list[Provenance]:
         bbox = _bbox(getattr(raw, "bbox", None))
         charspan = getattr(raw, "charspan", None)
         char_start = char_end = None
-        if (isinstance(charspan, (tuple, list)) and len(charspan) == 2
-                and all(type(v) is int and v >= 0 for v in charspan)):
-            char_start, char_end = charspan
+        if isinstance(charspan, (tuple, list)) and len(charspan) == 2:
+            char_start, char_end = int(charspan[0]), int(charspan[1])
         records.append(
             Provenance(
                 page_number=page_number,
@@ -676,20 +674,6 @@ def _confidence(item: Any) -> float | None:
 
 def _safe_metadata(item: Any, *, element_type: str | None = None) -> dict[str, Any]:
     metadata: dict[str, Any] = {"docling_class": item.__class__.__name__}
-    spans = [getattr(p, "charspan", None) for p in getattr(item, "prov", None) or []
-             if isinstance(getattr(p, "page_no", None), int) and p.page_no >= 1]
-    if any(span is not None for span in spans):
-        for attribute in ("text", "orig", "name"):
-            value = getattr(item, attribute, None)
-            if isinstance(value, str) and value.strip():
-                metadata["text_source"] = {
-                    "text": value, "field": attribute, "charspans": deepcopy(spans),
-                    "preserve_controls": element_type == "code",
-                }
-                break
-    order_context = getattr(item, "reading_order_context", None)
-    if isinstance(order_context, dict):
-        metadata["reading_order_context"] = dict(order_context)
     content_layer = getattr(item, "content_layer", None)
     if content_layer is not None:
         metadata["content_layer"] = str(getattr(content_layer, "value", content_layer))

@@ -83,19 +83,17 @@ class _ProvProxy:
 class _ItemProxy:
     """Uniform read access to one MinerU block regardless of nesting depth."""
 
-    __slots__ = ("_block", "_ordering", "_page_idx", "_page_size")
+    __slots__ = ("_block", "_page_idx", "_page_size")
 
     def __init__(
         self,
         block: Mapping[str, Any],
         page_idx: int,
         page_size: Sequence[float] | None,
-        ordering: str | None = None,
     ) -> None:
         self._block = block
         self._page_idx = page_idx
         self._page_size = list(page_size or [])
-        self._ordering = ordering
 
     @property
     def label(self) -> str:
@@ -122,18 +120,6 @@ class _ItemProxy:
     @property
     def self_ref(self) -> str | None:
         return self._block.get("self_ref")
-
-    @property
-    def reading_order_context(self) -> dict[str, Any]:
-        index = self._block.get("index")
-        known = type(index) is int and index >= 0
-        return {
-            "provider": "mineru",
-            "source": "preproc_blocks.index" if known else "collection",
-            "page_idx": self._page_idx,
-            "native_index": index if known else None,
-            **({"ordering": self._ordering} if self._ordering is not None else {}),
-        }
 
     @property
     def parent(self) -> None:
@@ -197,14 +183,11 @@ class _ItemProxy:
 class MineruDocument:
     """Facade over a MinerU ``middle_json`` payload."""
 
-    def __init__(self, payload: Mapping[str, Any], *, native_order: bool = False) -> None:
+    def __init__(self, payload: Mapping[str, Any]) -> None:
         self._payload = payload
-        self._native_order = native_order
         self._pages: list[Mapping[str, Any]] = list(
             payload.get("pdf_info") or []
         )
-        if native_order:
-            self._pages.sort(key=lambda p: int(p.get("page_idx", 0)))
 
     # -- pages -----------------------------------------------------------
 
@@ -221,18 +204,6 @@ class MineruDocument:
 
     # -- block iteration ---------------------------------------------------
 
-    def _page_blocks(self, page: Mapping[str, Any]) -> tuple[list[Mapping[str, Any]], str | None]:
-        blocks = list(page.get("preproc_blocks") or [])
-        if not self._native_order:
-            return blocks, None
-        blocks = [b for b in blocks if b.get("type") != "discarded"]
-        indices = [b.get("index") for b in blocks]
-        if any(type(i) is not int or i < 0 for i in indices):
-            return blocks, "missing_or_invalid_index"
-        if len(set(indices)) != len(indices):
-            return blocks, "duplicate_index"
-        return sorted(blocks, key=lambda b: b["index"]), "native_index"
-
     def _blocks_of(
         self,
         types: tuple[str, ...],
@@ -241,14 +212,14 @@ class MineruDocument:
         for page in self._pages:
             page_idx = int(page.get("page_idx", 0))
             page_size = page.get("page_size") or []
-            sources, ordering = self._page_blocks(page)
+            sources: list[Mapping[str, Any]] = list(
+                page.get("preproc_blocks") or []
+            )
+            if include_discarded:
+                sources += list(page.get("discarded_blocks") or [])
             for block in sources:
                 if block.get("type") in types:
-                    yield _ItemProxy(block, page_idx, page_size, ordering)
-            if include_discarded:
-                for block in page.get("discarded_blocks") or []:
-                    if block.get("type") in types:
-                        yield _ItemProxy(block, page_idx, page_size)
+                    yield _ItemProxy(block, page_idx, page_size)
 
     def iterate_items(
         self, with_groups: bool = True, traverse_pictures: bool = True, **_: Any
@@ -266,11 +237,10 @@ class MineruDocument:
         ):
             page_idx = int(page.get("page_idx", 0))
             page_size = page.get("page_size") or []
-            blocks, ordering = self._page_blocks(page)
-            for block in blocks:
+            for block in page.get("preproc_blocks") or []:
                 if block.get("type") == "discarded":
                     continue
-                proxy = _ItemProxy(block, page_idx, page_size, ordering)
+                proxy = _ItemProxy(block, page_idx, page_size)
                 if block.get("type") == "title":
                     yield proxy, 1
                     level = 2
@@ -297,8 +267,6 @@ class MineruDocument:
 
     @property
     def full_text(self) -> str:
-        if self._native_order:
-            return "\n\n".join(item.text for item, _ in self.iterate_items() if item.text)
         parts: list[str] = []
         for page in self._pages:
             for block in page.get("preproc_blocks") or []:

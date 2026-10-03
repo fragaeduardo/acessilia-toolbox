@@ -31,6 +31,12 @@ dependencies and allow independent scaling. The Toolbox should retain
 this approach, but Docling becomes one provider of normalized
 capabilities.
 
+**Historical experiment notes:** B1–B5 were withdrawn from the current product
+on 2026-10-03 at the user's request after neutral fusion scores. The Docling
+notes below record removed native-order/text-source features, available only
+in their historical Git revisions. Current normalization uses collection order
+and no longer emits those experimental metadata fields.
+
 Potential capabilities:
 
 ``` text
@@ -69,6 +75,11 @@ MinerU can provide overlapping document-understanding capabilities.
 Overlap is useful for experimentation, fallback, and explicit agent
 policy, but providers are interchangeable only when they satisfy the
 same capability contract.
+
+**Historical experiment notes:** The native-index metadata and ordering option
+described below were withdrawn with B1–B5 on 2026-10-03. Current MinerU
+normalization uses the received collection order. Frozen experiment results
+and their historical source revisions remain available for reproduction.
 
 The adapter preserves each nonnegative integer `preproc_blocks.index` in element
 `metadata.reading_order_context`, together with its provider and zero-based
