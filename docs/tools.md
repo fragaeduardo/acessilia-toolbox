@@ -64,10 +64,23 @@ The adapter preserves each nonnegative integer `preproc_blocks.index` in element
 `metadata.reading_order_context`, together with its provider and zero-based
 `page_idx`. Missing or invalid indices (including booleans) become
 `native_index: null`, with `source: collection`; no index is inferred from the
-array position. Normalization retains its existing traversal order. Consuming
-the index to reorder blocks is a separate experiment. The adapter version is
+array position. Normalization retains its existing traversal order by default.
+The adapter version is
 included in cache identity so previously cached manifests cannot hide the new
 metadata.
+
+The experimental boolean parameter `native_reading_order` (default: `false`)
+enables sorting by index independently on each page. Sorting requires a valid,
+distinct index on every non-discarded block; otherwise the entire page keeps
+its received sequence. In this mode, `reading_order_context.ordering` records
+`native_index`, `missing_or_invalid_index` or `duplicate_index`. No text is
+deduplicated by index. The option stays local and is not sent to mineru-api.
+All document views use the selected sequence; indices stay local to their page.
+
+The original 66-page experiment found unchanged provider and fusion scores.
+Shuffling storage while retaining indices recovered the original outputs on
+72 real payloads. This validates storage independence, not semantic improvement;
+keep the option experimental and off by default.
 
 ## OCR
 
