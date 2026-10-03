@@ -29,7 +29,7 @@ VERSION_KEYS = ("docling-serve", "docling_serve_version", "version")
 # Components whose upgrade changes extraction output, so they belong in the
 # cache key: a new Docling build must not reuse an older result.
 COMPONENT_KEYS = ("docling-serve", "docling", "docling-core", "docling-ibm-models", "docling-parse")
-ADAPTER_VERSION = "tree-order-3-opt-in"
+ADAPTER_VERSION = "charspans-4-tree-order-opt-in"
 
 
 class DoclingProvider:

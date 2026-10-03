@@ -149,11 +149,8 @@ class _ProvProxy:
         self.page_no = page if page is not None else data.get("page_number", 1)
         bbox = data.get("bbox")
         self.bbox = _BboxProxy(bbox) if bbox else None
-        charspan = data.get("charspan")
-        if isinstance(charspan, list | tuple) and len(charspan) == 2:
-            self.charspan: tuple[int, int] | None = (int(charspan[0]), int(charspan[1]))
-        else:
-            self.charspan = None
+        # Keep malformed offsets as evidence; normalization validates them.
+        self.charspan = data.get("charspan")
 
 
 class _BboxProxy:
