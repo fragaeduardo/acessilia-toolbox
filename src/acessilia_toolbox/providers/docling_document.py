@@ -24,8 +24,9 @@ ITEM_COLLECTIONS = {
 class DoclingServeDocument:
     """Document facade over a docling-serve JSON payload."""
 
-    def __init__(self, payload: dict[str, Any]) -> None:
+    def __init__(self, payload: dict[str, Any], *, native_order: bool = False) -> None:
         self._payload = payload
+        self._native_order = native_order
         self._items: list[tuple[Any, int]] = []
         self._build_items()
 
@@ -37,7 +38,7 @@ class DoclingServeDocument:
                 entries[ref] = item
 
         seen: set[str] = set()
-        for root_name in ("body", "furniture"):
+        for root_name in ("body", "furniture") if self._native_order else ():
             root = self._payload.get(root_name)
             if not isinstance(root, dict):
                 continue

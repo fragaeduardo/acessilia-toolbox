@@ -29,7 +29,7 @@ VERSION_KEYS = ("docling-serve", "docling_serve_version", "version")
 # Components whose upgrade changes extraction output, so they belong in the
 # cache key: a new Docling build must not reuse an older result.
 COMPONENT_KEYS = ("docling-serve", "docling", "docling-core", "docling-ibm-models", "docling-parse")
-ADAPTER_VERSION = "tree-order-2"
+ADAPTER_VERSION = "tree-order-3-opt-in"
 
 
 class DoclingProvider:
@@ -48,6 +48,9 @@ class DoclingProvider:
         media_type: str,
         parameters: Mapping[str, Any] | None = None,
     ) -> ExtractionResult:
+        native_order = (parameters or {}).get("native_reading_order", False)
+        if not isinstance(native_order, bool):
+            raise ProviderExecutionError("native_reading_order must be a boolean", provider="docling")
         started_at = datetime.now(UTC)
         started_clock = perf_counter()
 
@@ -59,7 +62,7 @@ class DoclingProvider:
 
         completed_at = datetime.now(UTC)
         return ExtractionResult(
-            document=DoclingServeDocument(document),
+            document=DoclingServeDocument(document, native_order=native_order),
             backend="docling",
             started_at=started_at,
             completed_at=completed_at,
@@ -71,6 +74,7 @@ class DoclingProvider:
                 "capability": capability_id,
                 "component_versions": {**_components(versions), "docling-adapter": ADAPTER_VERSION},
                 **dict(parameters or {}),
+                "native_reading_order": native_order,
             },
         )
 
