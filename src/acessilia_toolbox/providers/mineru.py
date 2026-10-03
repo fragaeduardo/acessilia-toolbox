@@ -41,6 +41,7 @@ PARSE_PATH = "/file_parse"
 
 VERSION_KEYS = ("version", "mineru_version")
 COMPONENT_KEYS = ("version", "backend")
+ADAPTER_VERSION = "native-index-1"
 
 
 class MineruProvider:
@@ -82,7 +83,8 @@ class MineruProvider:
                 "base_url": self.base_url,
                 "capability": capability_id,
                 "component_versions": (
-                    {"mineru": server_version} if server_version else {}
+                    {"mineru-adapter": ADAPTER_VERSION,
+                     **({"mineru": server_version} if server_version else {})}
                 ),
                 **dict(parameters or {}),
             },
@@ -91,7 +93,8 @@ class MineruProvider:
     def versions(self) -> dict[str, str]:
         with self._client(timeout=10.0) as client:
             reported = self._server_version(client)
-        return {"provider": reported or self.descriptor.version}
+        return {"provider": reported or self.descriptor.version,
+                "mineru-adapter": ADAPTER_VERSION}
 
     def health(self) -> ProviderHealth:
         checked_at = datetime.now(UTC)

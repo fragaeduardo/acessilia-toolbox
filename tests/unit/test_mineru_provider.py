@@ -214,6 +214,14 @@ def test_extraction_wraps_the_middle_json() -> None:
     assert document.page_count == 2
     assert len(document.texts) == 2
 
+def test_adapter_identity_matches_extraction_configuration() -> None:
+    from acessilia_toolbox.providers.mineru import ADAPTER_VERSION
+
+    adapter = provider_with(parse_handler)
+    extraction = extract(adapter)
+    assert adapter.versions()["mineru-adapter"] == ADAPTER_VERSION
+    assert extraction.configuration["component_versions"]["mineru-adapter"] == ADAPTER_VERSION
+
 
 def test_parse_request_carries_defaults_and_parameters() -> None:
     captured: dict[str, object] = {}

@@ -122,6 +122,17 @@ class _ItemProxy:
         return self._block.get("self_ref")
 
     @property
+    def reading_order_context(self) -> dict[str, Any]:
+        index = self._block.get("index")
+        known = type(index) is int and index >= 0
+        return {
+            "provider": "mineru",
+            "source": "preproc_blocks.index" if known else "collection",
+            "page_idx": self._page_idx,
+            "native_index": index if known else None,
+        }
+
+    @property
     def parent(self) -> None:
         return None
 
