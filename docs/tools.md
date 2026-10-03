@@ -53,6 +53,16 @@ unchanged reading-order and fusion scores, but a small mean text loss for Doclin
 alone. Native traversal preserves provider structure; it does not establish a
 quality improvement in Markdown conversion.
 
+When provider charspans exist, element `metadata.text_source` preserves the
+uncleaned selected text, its field, raw spans and control-character cleanup mode.
+The adapter/cache identity includes this contract. Offsets are not positions in
+normalized text or formatted Markdown: consumers must map and validate them.
+Malformed values remain in metadata; values incompatible with the normalized
+nonnegative integer provenance fields become unknown there, without coercion.
+Out-of-range and reversed integer spans remain available for downstream
+validation. No spans are inferred when the provider supplies none. Selecting
+`orig` or `name` as fallback text does not establish the offset scope.
+
 ## MinerU
 
 MinerU can provide overlapping document-understanding capabilities.
