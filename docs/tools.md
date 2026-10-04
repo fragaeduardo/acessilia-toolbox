@@ -31,12 +31,6 @@ dependencies and allow independent scaling. The Toolbox should retain
 this approach, but Docling becomes one provider of normalized
 capabilities.
 
-**Historical experiment notes:** B1–B5 were withdrawn from the current product
-on 2026-10-03 at the user's request after neutral fusion scores. The Docling
-notes below record removed native-order/text-source features, available only
-in their historical Git revisions. Current normalization uses collection order
-and no longer emits those experimental metadata fields.
-
 Potential capabilities:
 
 ``` text
@@ -45,63 +39,12 @@ document.layout.analyze
 table.extract
 ```
 
-The local adapter accepts the experimental boolean parameter
-`native_reading_order` (default: `false`). When enabled, normalization visits
-references from `body`, then `furniture`, retaining unreferenced collection items
-afterward. Cycles, repeated references and unresolved references do not duplicate
-or discard existing items. Each element's `metadata.reading_order_context`
-identifies whether its position came from a native tree or collection fallback.
-This option stays local and is not sent to docling-serve. Adapter identity and
-the request parameter participate in cache identity.
-
-Keep the default for production. The paired 66-page development experiment found
-unchanged reading-order and fusion scores, but a small mean text loss for Docling
-alone. Native traversal preserves provider structure; it does not establish a
-quality improvement in Markdown conversion.
-
-When provider charspans exist, element `metadata.text_source` preserves the
-uncleaned selected text, its field, raw spans and control-character cleanup mode.
-The adapter/cache identity includes this contract. Offsets are not positions in
-normalized text or formatted Markdown: consumers must map and validate them.
-Malformed values remain in metadata; values incompatible with the normalized
-nonnegative integer provenance fields become unknown there, without coercion.
-Out-of-range and reversed integer spans remain available for downstream
-validation. No spans are inferred when the provider supplies none. Selecting
-`orig` or `name` as fallback text does not establish the offset scope.
-
 ## MinerU
 
 MinerU can provide overlapping document-understanding capabilities.
 Overlap is useful for experimentation, fallback, and explicit agent
 policy, but providers are interchangeable only when they satisfy the
 same capability contract.
-
-**Historical experiment notes:** The native-index metadata and ordering option
-described below were withdrawn with B1–B5 on 2026-10-03. Current MinerU
-normalization uses the received collection order. Frozen experiment results
-and their historical source revisions remain available for reproduction.
-
-The adapter preserves each nonnegative integer `preproc_blocks.index` in element
-`metadata.reading_order_context`, together with its provider and zero-based
-`page_idx`. Missing or invalid indices (including booleans) become
-`native_index: null`, with `source: collection`; no index is inferred from the
-array position. Normalization retains its existing traversal order by default.
-The adapter version is
-included in cache identity so previously cached manifests cannot hide the new
-metadata.
-
-The experimental boolean parameter `native_reading_order` (default: `false`)
-enables sorting by index independently on each page. Sorting requires a valid,
-distinct index on every non-discarded block; otherwise the entire page keeps
-its received sequence. In this mode, `reading_order_context.ordering` records
-`native_index`, `missing_or_invalid_index` or `duplicate_index`. No text is
-deduplicated by index. The option stays local and is not sent to mineru-api.
-All document views use the selected sequence; indices stay local to their page.
-
-The original 66-page experiment found unchanged provider and fusion scores.
-Shuffling storage while retaining indices recovered the original outputs on
-72 real payloads. This validates storage independence, not semantic improvement;
-keep the option experimental and off by default.
 
 ## OCR
 
