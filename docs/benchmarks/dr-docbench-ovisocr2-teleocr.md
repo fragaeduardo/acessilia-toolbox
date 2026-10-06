@@ -1,6 +1,7 @@
 # OvisOCR2 and TeleOCR evaluation on Dr.DocBench
 
 **Date:** October 5, 2026  
+**Latest update:** October 6, 2026<br>
 **Sample:** 66 paired pages from the `dev` split, seed `20261003`  
 **Dataset revision:** `7a2bc3882dff68e883fb55d10d4df22865ce2b07`
 
@@ -38,6 +39,7 @@ Dr.DocBench reports edit distance, where lower is better. For an easier comparis
 
 - Ran the official `DrDocBench/tools/multipage_pdf_validation.py` entrypoint with the benchmark's `multipage_md2md_dataset` configuration, `quick_match`, and the official `dev` ground truth.
 - Every row uses the same 66 manifest IDs: one randomly selected page per document, seed `20261003`, dataset revision `7a2bc3882dff68e883fb55d10d4df22865ce2b07`. The four configured official metrics ran for each row: text, display formula, table, and reading order. The common empty-ground-truth-page warning was present across runs.
+- On October 6, the official evaluator also ran two TeleOCR ablations—formulas only and tables only—on those same 66 pages. Both reused cached TeleOCR predictions; no new model inference was run.
 - This is the complete official scoring pipeline on the 66-page paired sample, **not a run over all 986 `dev` documents**. The official report does not provide a single composite score here, so I keep the task metrics separate.
 
 ### Scores
@@ -71,6 +73,8 @@ Dr.DocBench reports edit distance, where lower is better. For an easier comparis
 | Current fusion + both models’ tables/formulas | 77.53 (-4.45) | 12.97 (+9.82) | 61.12 | 59.18 | 76.24 (-2.11) | 13 |
 | Current fusion + Ovis tables/formulas | 81.98 (+0.00) | 13.22 (+10.07) | 59.86 | 52.56 | 78.36 (+0.00) | 12 |
 | Current fusion + Tele tables/formulas | 81.98 (+0.00) | 13.34 (+10.19) | 61.12 | 59.18 | 78.36 (+0.00) | 13 |
+| Current fusion + Tele formulas only (ablation) | 81.98 (+0.00) | 13.34 (+10.19) | — | — | 78.36 (+0.00) | 0 |
+| Current fusion + Tele tables only (ablation) | 81.98 (+0.00) | 3.15 (+0.00) | 61.12 | 59.18 | 78.36 (+0.00) | 13 |
 | Current fusion + Ovis formulas, Tele tables | 81.98 (+0.00) | 13.22 (+10.07) | 61.12 | 59.18 | 78.36 (+0.00) | 13 |
 | Current fusion + Ovis tables, Tele tables/formulas | 81.98 (+0.00) | 13.34 (+10.19) | 61.54 | 59.21 | 78.36 (+0.00) | 13 |
 | Current fusion + both models’ tables/formulas | 81.98 (+0.00) | 12.98 (+9.83) | 61.54 | 59.21 | 78.36 (+0.00) | 13 |
@@ -105,6 +109,7 @@ These are standalone-model scores from Acessilia's internal evaluator, separate 
 - The best measured additive combination is **current fusion + OvisOCR2 tables + TeleOCR tables/formulas**: text **81.985** and reading order **78.355** stay unchanged; formula score is **13.341** (**+10.192 pp**); table TEDS is **61.543** and table edit score **59.212**. Relative to using TeleOCR structures alone, adding OvisOCR2 tables raises TEDS by **0.422 pp** and table edit by **0.034 pp** on this small sample.
 - The simpler **current fusion + TeleOCR tables/formulas** route also preserves text/order and scores **13.341** on formulas, **61.121 TEDS**, and **59.178 table-edit points**. This is the cleanest first integration candidate. The extra OvisOCR2 tables produce only a small table gain here; adding both models’ formulas introduces conflicts and lowers formula score to **12.978**.
 - The implemented TeleOCR route was re-scored with the official evaluator after integrating it into the current fusion path. Its displayed metrics match the additive TeleOCR row above; the report and score files are listed under reproducibility artifacts. The predictions reused cached TeleOCR responses, so this verifies current routing and official scoring, not a fresh model-inference run.
+- The October 6 ablation confirms the formula gain comes from TeleOCR formulas: the formulas-only row matches the combined route at **13.341**, while tables-only leaves formulas at the **3.148** baseline. Tables-only scores **61.121 TEDS** and **59.178 table-edit points** over 13 tables. Both ablations leave text and reading order unchanged. The baseline has no scored table samples, so the table row measures added coverage and quality, not a delta against an existing table score.
 - Treat the multi-pass triple/quartet losses as a warning about the current binary API and missing intermediate geometry. A proper implementation should preserve the existing text/order blocks and their boxes, then align new formula/table blocks against those blocks instead of re-parsing a flattened Markdown string.
 - Before broad adoption, validate on the complete `dev` split or a larger paired sample and place the new table/formula blocks using page geometry. TeleOCR was run with a reduced `1280×1280` image limit on 6 GB VRAM, so a larger-GPU rerun remains useful for measuring its ceiling.
 
@@ -119,4 +124,4 @@ This implementation currently appends typed structure blocks in page order becau
 
 ## Reproducibility artifacts
 
-Inputs, predictions, logs, and per-scenario official evaluator output are under the ignored `var/drbench/experiments/ovisocr2-dev66/` directory in the Acessilia repository. The implemented-route prediction set is `var/drbench/experiments/ovisocr2-dev66/official-predictions/implementation-current-plus-teleocr/`; its official evaluator output is `var/drbench/experiments/ovisocr2-dev66/scoring/tele-sidecar-replay/result/implementation-current-plus-teleocr_metric_result.json` (with per-task JSON files alongside it). The complete scorecard is also available as [dr-docbench-fusion-matrix.csv](dr-docbench-fusion-matrix.csv). Internal standalone reports are `local-ovisocr2.json` and `local-teleocr.json`; standalone official summaries are `result/ovisocr2-dev66_metric_result.json` and `result/teleocr-dev66_metric_result.json`.
+Inputs, predictions, logs, and per-scenario official evaluator output are under the ignored `var/drbench/experiments/ovisocr2-dev66/` directory in the Acessilia repository. The implemented-route prediction set is `var/drbench/experiments/ovisocr2-dev66/official-predictions/implementation-current-plus-teleocr/`; its official evaluator output is `var/drbench/experiments/ovisocr2-dev66/scoring/tele-sidecar-replay/result/implementation-current-plus-teleocr_metric_result.json` (with per-task JSON files alongside it). Ablation predictions are in `official-predictions/ablation-tele-formulas-only/` and `official-predictions/ablation-tele-tables-only/`; their metric JSON files are in `scoring/tele-ablation/result/`. The complete scorecard is also available as [dr-docbench-fusion-matrix.csv](dr-docbench-fusion-matrix.csv). Internal standalone reports are `local-ovisocr2.json` and `local-teleocr.json`; standalone official summaries are `result/ovisocr2-dev66_metric_result.json` and `result/teleocr-dev66_metric_result.json`.
