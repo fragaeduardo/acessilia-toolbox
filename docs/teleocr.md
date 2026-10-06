@@ -1,28 +1,80 @@
-# TeleOCR
+# Optional TeleOCR provider
 
-TeleOCR is registered as the `teleocr` provider for
-`document.structure.extract`. The Toolbox adapter sends PDFs to an isolated
-service that runs the upstream TeleOCR asynchronous inference engine and
-returns its Markdown for canonical normalization. The bundled vLLM processor
-is capped at 1,280 × 1,280 pixels so the service can initialize on a 6 GB GPU;
-raise this cap when deploying on hardware with more VRAM.
+For measured gains, failure cases and pending validation, see the
+[local evaluation report](teleocr-evaluation.md).
 
-The optional GPU service is pinned to upstream source commit
-`1e71f4fe792d12bbb86d2671c5ed6f3a1499b27d` and uses the upstream model
-`StarDoc-AI/TeleOCR`. Its model cache is stored in the `teleocr-models`
-volume. By default it uses `Detection`, an 8,192 token context and 0.9 GPU
-memory utilization; set `TELEOCR_LAYOUT_MODE=Segmentation` for degraded
-camera-captured documents.
+TeleOCR is an explicitly selected alternative for `document.structure.extract`
+on JPEG/PNG pages. The Toolbox adapter does not load weights, import PyTorch,
+choose between extractors, or merge their semantic outputs. An independently
+deployed GPU service supplies inference; the Agentic Core owns selection/fusion.
+This follows the [project constitution](constitution.md), principles 1, 4 and 5.
 
-Start the provider with `docker compose --profile teleocr up --build -d
-teleocr-serve`. The Toolbox endpoint defaults to
-`http://teleocr-serve:5006`; set `TELEOCR_SERVE_URL` when running the
-components outside the Compose network.
+## Enable
 
-In Acessilia, set `FUSION_STRUCTURE_PROVIDER=teleocr` to append only its
-formula and table candidates to the existing Docling+MinerU fusion.
+Merge the entry in `providers.teleocr.example.yaml` into the deployment's provider
+configuration and set `TELEOCR_SERVE_URL`. The default provider configuration is
+unchanged. Select `provider=teleocr` explicitly in a structure-extraction request.
+Image-only support is deliberate; render PDF pages through an existing capability.
 
-TeleOCR output is Markdown. The adapter preserves text, headings, formulas,
-and HTML tables, but does not invent coordinates when the upstream Markdown
-does not contain them. Image file references are omitted from text output;
-the accompanying captions remain.
+```bash
+curl -X POST "$TOOLBOX_URL/v1/capabilities/document.structure.extract:execute" \
+  -H "Authorization: Bearer $TOOLBOX_API_KEY" \
+  -F 'provider=teleocr' -F 'file=@page.png;type=image/png'
+```
+
+The backend must implement:
+
+- `GET /health`: successful status when inference is ready.
+- `GET /version`: JSON with `version`, `model` and `model_revision`. Model identity
+  participates in cache fingerprinting; do not reuse a revision after changing weights.
+  Configured inference defaults also participate in the identity. If identity is
+  unavailable, cached output is not reused; inference without a reported model
+  revision is rejected.
+- `POST /predict`: multipart `file` plus a JSON-encoded `parameters` form field
+  containing `min_long`, `max_long` and `batch_size` (1–32). The backend should
+  validate these values before starting inference. Return one page:
+
+```json
+{
+  "size": [1000, 2000],
+  "infer_size": [1200, 2400],
+  "blocks": [
+    {"type": "text", "bbox": [0.1, 0.2, 0.8, 0.3], "angle": 90, "content": "Example"}
+  ]
+}
+```
+
+`size` is the original image size. Boxes are normalized in that image and are
+converted to original pixel coordinates with `TOPLEFT` origin. Crop `angle` is
+retained as metadata; normalization does not silently rotate source-page geometry.
+Unknown labels and image-only pages are retained. Confidence remains `null` when
+the backend supplies no calibrated confidence. HTML tables and formula content
+remain available in the canonical document. Invalid geometry/response shapes fail
+explicitly rather than silently becoming flattened text.
+
+## Selection and evaluation
+
+Keep choices explicit: existing Docling/MinerU, TeleOCR, or multi-provider fusion
+in the Agentic Core. Benchmark ordering conventions belong to a benchmark renderer,
+not to the canonical accessibility tree. Learned selection thresholds remain
+experimental; a higher average score is insufficient to enable automatic routing.
+
+Observed failure modes motivate optional use: TeleOCR can omit text inside images,
+split verses/lists excessively, or hallucinate rotated marginal text. Generic
+fusion can also join catalog units incorrectly or mishandle rotated-page geometry.
+Preserve formulas and provider provenance when evaluating hybrid policies.
+
+The adapter is tested with simulated HTTP transport through the real normalization
+builder. Benchmark extraction and endpoint deployment are separate validations.
+Public experiment reports must include dataset/code revisions, per-component
+coverage, paired comparisons, subgroup counts, uncertainty and failures. Never
+publish benchmark images, annotations, extracted text or private dataset artifacts.
+
+## Acessilia pipeline experiment
+
+The Acessilia integration keeps Docling+MinerU as the primary text and reading-order
+fusion and uses TeleOCR only as an opt-in formula/table supplement. Its historical
+66-page DrDocBench results are preserved in
+[`docs/benchmarks/dr-docbench-ovisocr2-teleocr.md`](benchmarks/dr-docbench-ovisocr2-teleocr.md).
+Those measurements used the earlier Toolbox `/parse` backend and cached predictions;
+they are reference results, not a fresh evaluation of this image-only adapter.

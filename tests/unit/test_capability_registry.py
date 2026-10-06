@@ -126,6 +126,7 @@ def test_shipped_capability_manifests_are_valid() -> None:
         "mineru",
         "teleocr",
         "nougat",
+        "teleocr",
     ]
 
 

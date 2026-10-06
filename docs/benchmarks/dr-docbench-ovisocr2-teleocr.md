@@ -5,6 +5,13 @@
 **Sample:** 66 paired pages from the `dev` split, seed `20261003`  
 **Dataset revision:** `7a2bc3882dff68e883fb55d10d4df22865ce2b07`
 
+> Historical Acessilia pipeline result, retained for comparison. This report used
+> the earlier Toolbox TeleOCR `/parse` backend and cached predictions. The current
+> Toolbox adapter uses an external image-only `/predict` service with model-version
+> validation; rerun this benchmark with that service before treating these scores as
+> current-provider results. The separate provider evaluation is in
+> [`docs/teleocr-evaluation.md`](../teleocr-evaluation.md).
+
 ## Question
 
 Measure whether OvisOCR2 or TeleOCR improves structured extraction enough to justify integration into the Acessilia pipeline. Both models were connected to the Toolbox `document.structure.extract` provider and evaluated on the same pages and ground truth. We ran the official Dr.DocBench evaluator as well as Acessilia's internal scorer.

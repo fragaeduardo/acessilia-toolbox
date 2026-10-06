@@ -41,3 +41,5 @@ providers:
     version: "1e71f4fe"
   - id: nougat
     version: "0.1.17+"
+  - id: teleocr
+    version: "1.2b"

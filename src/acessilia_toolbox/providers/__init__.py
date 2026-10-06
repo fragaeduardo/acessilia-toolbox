@@ -87,6 +87,7 @@ ADAPTERS: dict[str, Callable[[ProviderDescriptor], ProviderAdapter]] = {
     "pure-text": PureTextProvider,
     "pymupdf-pdf": PyMuPDFProvider,
     "rapid-latex-ocr": RapidLatexOcrProvider,
+    "teleocr": TeleOCRProvider,
 }
 
 
