@@ -25,6 +25,7 @@ from acessilia_toolbox.providers.pure_math import PureMathProvider
 from acessilia_toolbox.providers.pure_text import PureTextProvider
 from acessilia_toolbox.providers.pymupdf_pdf import PyMuPDFProvider
 from acessilia_toolbox.providers.rapid_latex_ocr import RapidLatexOcrProvider
+from acessilia_toolbox.providers.teleocr import TeleOCRProvider
 
 # Global store/cache references injected by app.py for dataset mirroring.
 # These are set once at startup and read by the dataset adapter factories.
@@ -78,6 +79,7 @@ ADAPTERS: dict[str, Callable[[ProviderDescriptor], ProviderAdapter]] = {
     "mineru-layout": MineruLayoutProvider,
     "mineru-ocr": MineruOcrProvider,
     "nougat": NougatProvider,
+    "teleocr": TeleOCRProvider,
     "pure-accessibility": PureAccessibilityProvider,
     "pure-chem": PureChemProvider,
     "pure-code": PureCodeProvider,
@@ -122,5 +124,6 @@ __all__ = [
     "PureTextProvider",
     "PyMuPDFProvider",
     "RapidLatexOcrProvider",
+    "TeleOCRProvider",
     "create_adapter",
 ]

@@ -106,6 +106,25 @@ providers:
       - image/jpeg
       - image/tiff
 
+  - id: teleocr
+    version: "1e71f4fe"
+    transport: http
+    endpoint: ${TELEOCR_SERVE_URL}
+    health_path: /health
+    timeout_seconds: 1800
+    capabilities:
+      - document.structure.extract
+    media_types:
+      - application/pdf
+      - image/png
+      - image/jpeg
+      - image/tiff
+    config:
+      model_name: StarDoc-AI/TeleOCR
+      model_revision: e92585356c0d0b7b7a65938f3da035c6593cc9a6
+      source_commit: 1e71f4fe792d12bbb86d2671c5ed6f3a1499b27d
+      layout_mode: Detection
+
   - id: mineru-layout
     version: "2.1"
     transport: http

@@ -124,6 +124,7 @@ def test_shipped_capability_manifests_are_valid() -> None:
     assert [binding.id for binding in extract.providers] == [
         "docling",
         "mineru",
+        "teleocr",
         "nougat",
     ]
 

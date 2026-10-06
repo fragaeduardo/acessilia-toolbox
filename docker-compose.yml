@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        TOOLBOX_EXTRAS: api,storage,cache
+        TOOLBOX_EXTRAS: api,storage,cache,pdf
     image: acessilia-toolbox:local
     container_name: acessilia-toolbox
     ports:
@@ -58,6 +58,42 @@ services:
       timeout: 5s
       retries: 30
       start_period: 60s
+
+  # TeleOCR's upstream inference engine is exposed through a small local API.
+  teleocr-serve:
+    build:
+      context: ./docker/teleocr
+      dockerfile: Dockerfile
+      args:
+        TELEOCR_COMMIT: 1e71f4fe792d12bbb86d2671c5ed6f3a1499b27d
+    image: ${TELEOCR_SERVE_IMAGE:-acessilia-teleocr:local}
+    container_name: teleocr-serve
+    profiles: ["teleocr"]
+    ports:
+      - "${TELEOCR_SERVE_PORT:-5006}:5006"
+    environment:
+      LAYOUT_MODE: ${TELEOCR_LAYOUT_MODE:-Detection}
+      GPU_MEMORY_UTILIZATION: ${TELEOCR_GPU_MEMORY_UTILIZATION:-0.9}
+      MAX_MODEL_LEN: ${TELEOCR_MAX_MODEL_LEN:-8192}
+      MODEL_REVISION: ${TELEOCR_MODEL_REVISION:-e92585356c0d0b7b7a65938f3da035c6593cc9a6}
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+      HF_HOME: /root/.cache/huggingface
+    volumes:
+      - teleocr-models:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:5006/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    restart: unless-stopped
 
   # Artifact storage. Credentials come from the environment, never from here.
   minio:
@@ -170,3 +206,4 @@ volumes:
   nougat-models:
   nougat-torch-models:
   valkey-data:
+  teleocr-models:

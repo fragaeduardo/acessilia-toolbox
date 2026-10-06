@@ -37,5 +37,7 @@ providers:
     version: "1.32+"
   - id: mineru
     version: "2.1+"
+  - id: teleocr
+    version: "1e71f4fe"
   - id: nougat
     version: "0.1.17+"

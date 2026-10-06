@@ -110,8 +110,19 @@ def test_from_file_reports_missing_configuration(tmp_path: Path) -> None:
 
 def test_shipped_provider_topology_loads(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DOCLING_SERVE_URL", "http://localhost:5001")
+    monkeypatch.setenv("TELEOCR_SERVE_URL", "http://localhost:5006")
     registry = ProviderRegistry.from_file(PROJECT_ROOT / "providers-config.yaml")
 
     docling = registry.get("docling")
     assert docling.endpoint == "http://localhost:5001"
     assert docling.implements("document.structure.extract")
+
+    teleocr = registry.get("teleocr")
+    assert teleocr.endpoint == "http://localhost:5006"
+    assert teleocr.version == "1e71f4fe"
+    assert teleocr.config["model_revision"] == (
+        "e92585356c0d0b7b7a65938f3da035c6593cc9a6"
+    )
+    assert teleocr.config["source_commit"] == (
+        "1e71f4fe792d12bbb86d2671c5ed6f3a1499b27d"
+    )
