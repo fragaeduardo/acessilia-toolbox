@@ -10,8 +10,8 @@
 #                   host with NVIDIA GPU and ~20 GB free disk.
 #
 # Usage:
-#   ./scripts/build-mineru-image.sh                 # CPU variant, latest
-#   ./scripts/build-mineru-image.sh 2.1.11          # CPU variant, pinned
+#   ./scripts/build-mineru-image.sh                 # CPU variant, pinned default
+#   ./scripts/build-mineru-image.sh 4.0.12          # CPU variant, pinned
 #   MINERU_REPAIR=1 ./scripts/build-mineru-image.sh # patch existing CPU image
 #   MINERU_VARIANT=gpu ./scripts/build-mineru-image.sh   # GPU variant
 #
@@ -23,7 +23,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-MINERU_VERSION="${1:-latest}"
+MINERU_VERSION="${1:-4.0.12}"
 MINERU_VARIANT="${MINERU_VARIANT:-cpu}"
 MINERU_REPAIR="${MINERU_REPAIR:-0}"
 MINERU_REPO_URL="${MINERU_REPO_URL:-https://github.com/opendatalab/MinerU.git}"
@@ -64,7 +64,7 @@ if [[ "${MINERU_VARIANT}" == "cpu" ]]; then
     [[ -f "${DOCKERFILE}" ]] || { echo "❌ ${DOCKERFILE} not found"; exit 1; }
 
     echo "→ Building CPU-only image from ${DOCKERFILE}"
-    docker build -t "${IMAGE_TAG}" -f "${DOCKERFILE}" "${PROJECT_DIR}/docker"
+    docker build --build-arg "MINERU_VERSION=${MINERU_VERSION}" -t "${IMAGE_TAG}" -f "${DOCKERFILE}" "${PROJECT_DIR}/docker"
 
     echo ""
     echo "✅ Built ${IMAGE_TAG} (CPU-only)"
@@ -81,13 +81,9 @@ if [[ -d "${WORK_DIR}/.git" ]]; then
     git -C "${WORK_DIR}" fetch --tags --quiet
 else
     echo "→ Cloning ${MINERU_REPO_URL}"
-    git clone --depth 1 --branch master "${MINERU_REPO_URL}" "${WORK_DIR}"
+    git clone --depth 1 --branch "mineru-${MINERU_VERSION}-released" "${MINERU_REPO_URL}" "${WORK_DIR}"
 fi
 
-if [[ "${MINERU_VERSION}" != "latest" ]]; then
-    echo "→ Checking out tag mineru-${MINERU_VERSION}-released"
-    git -C "${WORK_DIR}" checkout "mineru-${MINERU_VERSION}-released"
-fi
 
 DOCKERFILE="${WORK_DIR}/docker/global/Dockerfile"
 
