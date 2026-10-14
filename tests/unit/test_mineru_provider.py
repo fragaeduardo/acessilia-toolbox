@@ -312,7 +312,7 @@ def test_connection_error_maps_to_provider_unavailable() -> None:
         extract(provider_with(handler))
 
 
-def test_health_uses_openapi_probe() -> None:
+def test_health_uses_v1_probe() -> None:
     health = provider_with(parse_handler).health()
     assert health.healthy is True
     assert health.version == "4.0.12"
