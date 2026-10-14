@@ -276,7 +276,7 @@ provider. It uses the same `${VARIABLE}` placeholders from `.env`:
 ``` yaml
 providers:
   - id: docling
-    version: "1.32"
+    version: "1.37.0"
     transport: http
     endpoint: ${DOCLING_SERVE_URL}
     health_path: /health
