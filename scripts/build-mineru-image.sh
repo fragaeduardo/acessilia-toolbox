@@ -69,6 +69,7 @@ if [[ "${MINERU_VARIANT}" == "cpu" ]]; then
         -t "${IMAGE_TAG}" -f "${DOCKERFILE}" "${PROJECT_DIR}/docker"
 
     echo ""
+    docker run --rm --entrypoint python3 "${IMAGE_TAG}" -c "from mineru.version import __version__; assert __version__ == '${MINERU_VERSION}', __version__"
     echo "✅ Built ${IMAGE_TAG} (CPU-only)"
     echo ""
     echo "Next steps:"
@@ -80,7 +81,8 @@ fi
 echo "Workdir: ${WORK_DIR}"
 if [[ -d "${WORK_DIR}/.git" ]]; then
     echo "→ Updating existing clone at ${WORK_DIR}"
-    git -C "${WORK_DIR}" fetch --tags --quiet
+    git -C "${WORK_DIR}" fetch --depth 1 origin "refs/tags/mineru-${MINERU_VERSION}-released:refs/tags/mineru-${MINERU_VERSION}-released"
+    git -C "${WORK_DIR}" checkout --detach "mineru-${MINERU_VERSION}-released"
 else
     echo "→ Cloning ${MINERU_REPO_URL}"
     git clone --depth 1 --branch "mineru-${MINERU_VERSION}-released" "${MINERU_REPO_URL}" "${WORK_DIR}"
@@ -93,6 +95,7 @@ echo "→ Building ${IMAGE_TAG} (downloads ~10 GB of layers; grab a coffee)"
 docker build -t "${IMAGE_TAG}" -f "${DOCKERFILE}" "${WORK_DIR}"
 
 echo ""
+docker run --rm --entrypoint python3 "${IMAGE_TAG}" -c "from mineru.version import __version__; assert __version__ == '${MINERU_VERSION}', __version__"
 echo "✅ Built ${IMAGE_TAG} (GPU/vllm variant)"
 echo ""
 echo "Next steps:"
