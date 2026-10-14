@@ -164,7 +164,7 @@ class MineruProvider:
 
         result = response.json()
         files = result.get("files") if isinstance(result, dict) else None
-        if result.get("status") != "completed" or not isinstance(files, list) or len(files) != 1:
+        if not isinstance(result, dict) or result.get("status") != "completed" or not isinstance(files, list) or len(files) != 1:
             raise ProviderExecutionError(
                 "MinerU returned an incomplete or malformed parsing result",
                 provider=self.descriptor.id,
