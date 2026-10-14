@@ -24,6 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 MINERU_VERSION="${1:-4.0.12}"
+[[ "${MINERU_VERSION}" != "latest" ]] || { echo "Pin a concrete MinerU version"; exit 1; }
 MINERU_VARIANT="${MINERU_VARIANT:-cpu}"
 MINERU_REPAIR="${MINERU_REPAIR:-0}"
 MINERU_REPO_URL="${MINERU_REPO_URL:-https://github.com/opendatalab/MinerU.git}"
@@ -64,7 +65,8 @@ if [[ "${MINERU_VARIANT}" == "cpu" ]]; then
     [[ -f "${DOCKERFILE}" ]] || { echo "❌ ${DOCKERFILE} not found"; exit 1; }
 
     echo "→ Building CPU-only image from ${DOCKERFILE}"
-    docker build --build-arg "MINERU_VERSION=${MINERU_VERSION}" -t "${IMAGE_TAG}" -f "${DOCKERFILE}" "${PROJECT_DIR}/docker"
+    docker build --build-arg "MINERU_VERSION=${MINERU_VERSION}" \
+        -t "${IMAGE_TAG}" -f "${DOCKERFILE}" "${PROJECT_DIR}/docker"
 
     echo ""
     echo "✅ Built ${IMAGE_TAG} (CPU-only)"
