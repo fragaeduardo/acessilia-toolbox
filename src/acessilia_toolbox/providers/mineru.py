@@ -162,9 +162,19 @@ class MineruProvider:
                 provider=self.descriptor.id,
             ) from exc
 
-        result = response.json()
+        try:
+            result = response.json()
+        except ValueError as exc:
+            raise ProviderExecutionError(
+                "MinerU returned invalid JSON", provider=self.descriptor.id
+            ) from exc
         files = result.get("files") if isinstance(result, dict) else None
-        if not isinstance(result, dict) or result.get("status") != "completed" or not isinstance(files, list) or len(files) != 1:
+        if (
+            not isinstance(result, dict)
+            or result.get("status") != "completed"
+            or not isinstance(files, list)
+            or len(files) != 1
+        ):
             raise ProviderExecutionError(
                 "MinerU returned an incomplete or malformed parsing result",
                 provider=self.descriptor.id,
@@ -188,7 +198,10 @@ class MineruProvider:
                     provider=self.descriptor.id,
                 )
             try:
-                download = client.get(f"/v1/files/{quote(file_id, safe='')}/content")
+                download = client.get(
+                    f"/v1/files/{quote(file_id, safe='')}/content",
+                    follow_redirects=True,
+                )
                 download.raise_for_status()
                 middle_json = download.json()
             except httpx.HTTPError as exc:
