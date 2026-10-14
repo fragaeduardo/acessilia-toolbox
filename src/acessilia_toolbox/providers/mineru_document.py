@@ -309,11 +309,15 @@ class MineruDocument:
 
     @property
     def backend(self) -> str | None:
-        return self._payload.get("_backend") or self._payload.get("extensions", {}).get("mineru", {}).get("tier")
+        return self._payload.get("_backend") or (
+            self._payload.get("extensions", {}).get("mineru", {}).get("tier")
+        )
 
     @property
     def version_name(self) -> str | None:
-        return self._payload.get("_version_name") or self._payload.get("metadata", {}).get("producer", {}).get("version")
+        return self._payload.get("_version_name") or (
+            self._payload.get("metadata", {}).get("producer", {}).get("version")
+        )
 
     @property
     def raw(self) -> dict[str, Any]:
